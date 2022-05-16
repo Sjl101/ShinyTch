@@ -60,6 +60,10 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 class_names = train_ds.class_names
 print(class_names)
 
+tf.data.experimental.save(
+    train_ds, "", compression=None, shard_func=None, checkpoint_args=None
+)
+
 num_classes = 898
 
 model = Sequential([
@@ -103,3 +107,5 @@ print(
     "This image most likely belongs to {} with a {:.2f} percent confidence."
     .format(class_names[np.argmax(score)], 100 * np.max(score))
 )
+
+tf.saved_model.save(model, "datasets/")

@@ -1,0 +1,9 @@
+item {
+    id: 1
+    name: '001-bulbasaur'
+}
+
+item {
+    id: 2
+    name: '002-ivysaur'
+}

@@ -1,0 +1,26 @@
+<annotation>
+	<folder>001-bulbasaur</folder>
+	<filename>13.jpg</filename>
+	<path>/home/sjl101/Documents/GitHub/ShinyTch/pokemon/images/001-bulbasaur/13.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>1200</width>
+		<height>675</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>001-bulbasaur</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>234</xmin>
+			<ymin>28</ymin>
+			<xmax>975</xmax>
+			<ymax>652</ymax>
+		</bndbox>
+	</object>
+</annotation>
