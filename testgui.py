@@ -2,6 +2,13 @@ import PySimpleGUI as sg
 import cv2
 import numpy as np
 import os.path
+import firebase_admin
+import json
+
+default_app = firebase_admin.initialize_app()
+shinysprite = False
+selectedpokemon = ''
+selectedsprites = 'assets/sprites/'
 
 selection = (
     '001-bulbasaur', '002-ivysaur', '003-venusaur', '004-charmander', '005-charmeleon', '006-charizard',
@@ -12,12 +19,18 @@ selection = (
     '029-nidoran-f', '030-nidorina', '031-nidoqueen', '032-nidoran-m', '033-nidorino', '034-nidoking',
     '035-clefairy', '036-clefable')
 
+
+
 gif = False
 def main():
+    global selectedsprites
+    global selectedpokemon
+    print(default_app)
     defaultgif = 'assets/default.gif'
     sg.theme("Purple")
     image_viewer_column = [
-        [sg.Text("Selected Pokemon:")],
+        [sg.Button("Hunt Settings", size=(20, 1), key='settings', tooltip="Settings for the current hunt")],
+        [sg.Text("Selected Pokemon:" + selectedpokemon)],
         [sg.Text(size=(40, 1), key="-TOUT-")],
         [sg.Image(key="-pokemon-")],
     ]
@@ -32,7 +45,7 @@ def main():
 
     # Create the window and show it without the plot
     window = sg.Window("PokeTch", location=(400, 200), ).Layout(layout)
-    window.set_icon("assets/icon.png")
+    window.set_icon("assets/icon2.png")
 
     cap = cv2.VideoCapture(0)
     
@@ -40,7 +53,7 @@ def main():
         event, values = window.read(timeout=20)
         if event == "Exit" or event == sg.WIN_CLOSED:
             break
-        folder = 'assets/'
+
         ret, frame = cap.read()
         frame = cv2.resize(frame, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
         imgbytes = cv2.imencode(".png", frame)[1].tobytes()
@@ -51,13 +64,60 @@ def main():
 
         if event == "-fac-":  # A file was chosen from the listbox
             try:
-                filename = os.path.join(folder, values["-fac-"][0] + '.gif')
+                if shinysprite == True:
+                    selectedpokemon = values["-fac-"][0]
+                    print(selectedpokemon)
+                    filename = os.path.join(selectedsprites, values["-fac-"][0] + '-s.gif')
+                elif shinysprite == False:
+                    selectedpokemon = values["-fac-"][0]
+                    print(selectedpokemon)
+                    filename = os.path.join(selectedsprites, values["-fac-"][0] + '.gif')
+
                 window["-TOUT-"].update(filename)
                 window["-pokemon-"].update(filename=filename)
                 defaultgif = filename
-                gif == True
             except:
                 pass  
+        if event == 'settings':
+            settings_window()
+        with open('data.json', 'w', encoding='utf-8') as f:
+            json.dump(selectedpokemon, f, ensure_ascii=False, indent=4) 
+
     window.close()
 
+
+
+#code for the hunt settings window
+def settings_window():
+    #gets the shinysprite bool 
+    global shinysprite
+    global selectedsprites
+    layout = [
+        [sg.Text("Hunt Settings", key="hunt")],
+        [sg.Text("Sprite Settings:", key="hunt")],
+        [sg.Button("Shiny", key="shinyspriteswitch")],
+        [sg.Button("Sprite Change", key="source")],
+    ]
+    huntsettingswindow = sg.Window("Hunt Settings", layout, modal=True)
+    choice = None
+    while True:
+        event, values = huntsettingswindow.read(timeout=20)
+        if event == 'shinyspriteswitch':
+            if shinysprite == False:
+                shinysprite = True
+                print(shinysprite)
+            elif shinysprite == True:
+                shinysprite = False
+                print(shinysprite)
+        if event == 'source':
+            if selectedsprites == 'assets/sprites/':
+                selectedsprites = 'assets/'
+                print(selectedsprites)
+            elif selectedsprites == 'assets/':
+                selectedsprites = 'assets/sprites/'
+                print(selectedsprites)
+        if event == "Exit" or event == sg.WIN_CLOSED:
+            break
+    huntsettingswindow.close()
+    
 main()
