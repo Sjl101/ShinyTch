@@ -1,164 +1,114 @@
-r"""Convert raw PASCAL dataset to TFRecord for object_detection.
-Example usage:
-    python object_detection/dataset_tools/create_pascal_tf_record.py \
-        --data_dir=/home/user/VOCdevkit \
-        --year=VOC2012 \
-        --output_path=/home/user/pascal.record
-"""
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import hashlib
-import io
-import logging
+import numpy as np
 import os
-
-from lxml import etree
-import PIL.Image
-import tensorflow.compat.v1 as tf
-
-from object_detection.utils import dataset_util
+import six.moves.urllib as urllib
+import sys
+import tarfile
+import tensorflow as tf
+import zipfile
+import pathlib
+from collections import defaultdict
+from io import StringIO
+from matplotlib import pyplot as plt
+from PIL import Image
+import PIL.ImageOps 
+from IPython.display import display
+from object_detection.utils import ops as utils_ops
 from object_detection.utils import label_map_util
+from object_detection.utils import visualization_utils as vis_util
+from grabscreen import grab_screen
+import time
 
 
-flags = tf.app.flags
-flags.DEFINE_string('data_dir', '', 'Root directory to raw PASCAL VOC dataset.')
-flags.DEFINE_string('set', 'train', 'Convert training set, validation set or '
-                    'merged set.')
-flags.DEFINE_string('annotations_dir', '',
-                    '(Relative) path to annotations directory.')
-flags.DEFINE_string('year', 'VOC2007', 'Desired challenge year.')
-flags.DEFINE_string('output_path', '', 'Path to output TFRecord')
-flags.DEFINE_string('label_map_path', 'label_map.pbtxt',
-                    'Path to label map proto')
-flags.DEFINE_boolean('ignore_difficult_instances', False, 'Whether to ignore '
-                     'difficult instances')
-FLAGS = flags.FLAGS
+title = "FPS benchmark"
+# set start time to current time
+start_time = time.time()
+# displays the frame rate every 2 second
+display_time = 2
+# Set primarry FPS to 0
+fps = 0
 
-SETS = ['train', 'val', 'trainval', 'test']
-YEARS = ['VOC2007', 'VOC2012', 'merged']
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
+mon = (0, 40, 800, 640) 
+while "models" in pathlib.Path.cwd().parts:
+    os.chdir('..')
+ 
+model_dir = pathlib.Path("models/faster_rcnn_resnet152_v1_800x1333_coco17_gpu-8/saved_model")
+model = tf.saved_model.load(str(model_dir))
+ 
+PATH_TO_LABELS = 'data/mscoco_label_map.pbtxt'
+category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
+ 
+detection_model = model
+ 
+def run_inference_for_single_image(model, image):
+  image = np.asarray(image)
+  # The input needs to be a tensor, convert it using `tf.convert_to_tensor`.
+  input_tensor = tf.convert_to_tensor(image)
+  # The model expects a batch of images, so add an axis with `tf.newaxis`.
+  input_tensor = input_tensor[tf.newaxis,...]
+ 
+  # Run inference
+  model_fn = model.signatures['serving_default']
+  output_dict = model_fn(input_tensor)
+ 
+  # All outputs are batches tensors.
+  # Convert to numpy arrays, and take index [0] to remove the batch dimension.
+  # We're only interested in the first num_detections.
+  num_detections = int(output_dict.pop('num_detections'))
+  output_dict = {key:value[0, :num_detections].numpy() 
+                 for key,value in output_dict.items()}
+  output_dict['num_detections'] = num_detections
+ 
+  # detection_classes should be ints.
+  output_dict['detection_classes'] = output_dict['detection_classes'].astype(np.int64)
+    
+  # Handle models with masks:
+  if 'detection_masks' in output_dict:
+    # Reframe the the bbox mask to the image size.
+    detection_masks_reframed = utils_ops.reframe_box_masks_to_image_masks(
+              output_dict['detection_masks'], output_dict['detection_boxes'],
+               image.shape[0], image.shape[1])      
+    detection_masks_reframed = tf.cast(detection_masks_reframed > 0.5,
+                                       tf.uint8)
+    output_dict['detection_masks_reframed'] = detection_masks_reframed.numpy()
+     
+  return output_dict
 
+def show_inference(model, frame):
+  #take the frame from webcam feed and convert that to array
+  image_np = np.array(frame)
+  # Actual detection.
+     
+  output_dict = run_inference_for_single_image(model, image_np)
+  # Visualization of the results of a detection.
+  vis_util.visualize_boxes_and_labels_on_image_array(
+      image_np,
+      output_dict['detection_boxes'],
+      output_dict['detection_classes'],
+      output_dict['detection_scores'],
+      category_index,
+      instance_masks=output_dict.get('detection_masks_reframed', None),
+      use_normalized_coordinates=True,
+      line_thickness=5)
+ 
+  return(image_np)
 
-def dict_to_tf_example(data,
-                       dataset_directory,
-                       label_map_dict,
-                       ignore_difficult_instances=False):
-                     
-  """Convert XML derived dict to tf.Example proto.
-  Notice that this function normalizes the bounding box coordinates provided
-  by the raw data.
-  Args:
-    data: dict holding PASCAL XML fields for a single image (obtained by
-      running dataset_util.recursive_parse_xml_to_dict)
-    dataset_directory: Path to root directory holding PASCAL dataset
-    label_map_dict: A map from string label names to integers ids.
-    ignore_difficult_instances: Whether to skip difficult instances in the
-      dataset  (default: False).
-    image_subdirectory: String specifying subdirectory within the
-      PASCAL dataset directory holding the actual image data.
-  Returns:
-    example: The converted tf.Example.
-  Raises:
-    ValueError: if the image pointed to by data['filename'] is not a valid JPEG
-  """
-  img_path = os.path.join(data['folder'],data['filename'])
-  full_path = os.path.join(dataset_directory, img_path)
-  with tf.gfile.GFile(full_path, 'rb') as fid:
-    encoded_jpg = fid.read()
-  encoded_jpg_io = io.BytesIO(encoded_jpg)
-  image = PIL.Image.open(encoded_jpg_io)
-  if image.format != 'JPEG':
-    raise ValueError('Image format not JPEG')
-  key = hashlib.sha256(encoded_jpg).hexdigest()
-
-  width = int(data['size']['width'])
-  height = int(data['size']['height'])
-
-  xmin = []
-  ymin = []
-  xmax = []
-  ymax = []
-  classes = []
-  classes_text = []
-  truncated = []
-  poses = []
-  difficult_obj = []
-  if 'object' in data:
-    for obj in data['object']:
-      difficult = bool(int(obj['difficult']))
-      if ignore_difficult_instances and difficult:
-        continue
-
-      difficult_obj.append(int(difficult))
-
-      xmin.append(float(obj['bndbox']['xmin']) / width)
-      ymin.append(float(obj['bndbox']['ymin']) / height)
-      xmax.append(float(obj['bndbox']['xmax']) / width)
-      ymax.append(float(obj['bndbox']['ymax']) / height)
-      classes_text.append(obj['name'].encode('utf8'))
-      classes.append(label_map_dict[obj['name']])
-      truncated.append(int(obj['truncated']))
-      poses.append(obj['pose'].encode('utf8'))
-
-  example = tf.train.Example(features=tf.train.Features(feature={
-      'image/height': dataset_util.int64_feature(height),
-      'image/width': dataset_util.int64_feature(width),
-      'image/filename': dataset_util.bytes_feature(
-          data['filename'].encode('utf8')),
-      'image/source_id': dataset_util.bytes_feature(
-          data['filename'].encode('utf8')),
-      'image/key/sha256': dataset_util.bytes_feature(key.encode('utf8')),
-      'image/encoded': dataset_util.bytes_feature(encoded_jpg),
-      'image/format': dataset_util.bytes_feature('jpeg'.encode('utf8')),
-      'image/object/bbox/xmin': dataset_util.float_list_feature(xmin),
-      'image/object/bbox/xmax': dataset_util.float_list_feature(xmax),
-      'image/object/bbox/ymin': dataset_util.float_list_feature(ymin),
-      'image/object/bbox/ymax': dataset_util.float_list_feature(ymax),
-      'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
-      'image/object/class/label': dataset_util.int64_list_feature(classes),
-      'image/object/difficult': dataset_util.int64_list_feature(difficult_obj),
-      'image/object/truncated': dataset_util.int64_list_feature(truncated),
-      'image/object/view': dataset_util.bytes_list_feature(poses),
-  }))
-  return example
-
-
-def main(_):
-  if FLAGS.set not in SETS:
-    raise ValueError('set must be in : {}'.format(SETS))
-  if FLAGS.year not in YEARS:
-    raise ValueError('year must be in : {}'.format(YEARS))
-
-  data_dir = FLAGS.data_dir
-  years = ['VOC2007', 'VOC2012']
-  if FLAGS.year != 'merged':
-    years = [FLAGS.year]
-
-  writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
-
-  label_map_dict = label_map_util.get_label_map_dict(FLAGS.label_map_path)
-
-  for year in years:
-    logging.info('Reading from PASCAL %s dataset.', year)
-    examples_path = os.path.join(data_dir,'001-bulbasaur' + '.txt')
-    annotations_dir = os.path.join(data_dir, FLAGS.annotations_dir)
-    examples_list = dataset_util.read_examples_list(examples_path)
-    for idx, example in enumerate(examples_list):
-      if idx % 100 == 0:
-        logging.info('On image %d of %d', idx, len(examples_list))
-      path = os.path.join(annotations_dir, example + '.xml')
-      with tf.gfile.GFile(path, 'r') as fid:
-        xml_str = fid.read()
-      xml = etree.fromstring(xml_str)
-      data = dataset_util.recursive_parse_xml_to_dict(xml)['annotation']
-
-      tf_example = dict_to_tf_example(data, FLAGS.data_dir, label_map_dict,
-                                      FLAGS.ignore_difficult_instances)
-      writer.write(tf_example.SerializeToString())
-
-  writer.close()
-
-
-if __name__ == '__main__':
-  tf.app.run()
+#Now we open the webcam and start detecting objects
+import cv2
+video_capture = cv2.VideoCapture(0)
+while True:
+    # Capture frame-by-frame
+    frame = grab_screen(region=mon)
+    Imagenp=show_inference(detection_model, frame)
+    cv2.imshow('object detection', cv2.resize(Imagenp, (800,600)))
+    fps+=1
+    TIME = time.time() - start_time
+    if (TIME) >= display_time :
+      print("FPS: ", fps / (TIME))
+      fps = 0
+      start_time = time.time()
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+    
+video_capture.release()
+cv2.destroyAllWindows()

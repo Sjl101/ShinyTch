@@ -1,0 +1,63 @@
+TensorFlow 2.0 Upgrade Script
+-----------------------------
+Converted 4 files
+Detected 0 issues that require attention
+--------------------------------------------------------------------------------
+================================================================================
+Detailed log follows:
+
+================================================================================
+================================================================================
+Input tree: 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\3-4\\'
+================================================================================
+--------------------------------------------------------------------------------
+Processing file 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\3-4\\object_detection_tutorial.py'
+ outputting to 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\output\\file\\object_detection_tutorial.py'
+--------------------------------------------------------------------------------
+
+100:17: INFO: Renamed 'tf.GraphDef' to 'tf.compat.v1.GraphDef'
+101:7: INFO: Renamed 'tf.gfile.GFile' to 'tf.io.gfile.GFile'
+148:9: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+150:12: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+159:29: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+176:21: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\3-4\\object_detection_tutorial_grabscreen.py'
+ outputting to 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\output\\file\\object_detection_tutorial_grabscreen.py'
+--------------------------------------------------------------------------------
+
+117:17: INFO: Renamed 'tf.GraphDef' to 'tf.compat.v1.GraphDef'
+118:7: INFO: Renamed 'tf.gfile.GFile' to 'tf.io.gfile.GFile'
+165:9: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+167:12: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+176:29: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+193:21: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+213:7: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\3-4\\object_detection_tutorial_grabscreen_faster.py'
+ outputting to 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\output\\file\\object_detection_tutorial_grabscreen_faster.py'
+--------------------------------------------------------------------------------
+
+52:17: INFO: Renamed 'tf.GraphDef' to 'tf.compat.v1.GraphDef'
+53:7: INFO: Renamed 'tf.gfile.GFile' to 'tf.io.gfile.GFile'
+61:7: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+Processing file 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\3-4\\object_detection_tutorial_grabscreen_pretty.py'
+ outputting to 'C:\\Users\\sjl10\\Downloads\\TensorFlow-object-detection-tutorial-master\\TensorFlow-object-detection-tutorial-master\\output\\file\\object_detection_tutorial_grabscreen_pretty.py'
+--------------------------------------------------------------------------------
+
+52:17: INFO: Renamed 'tf.GraphDef' to 'tf.compat.v1.GraphDef'
+53:7: INFO: Renamed 'tf.gfile.GFile' to 'tf.io.gfile.GFile'
+62:9: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+64:12: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+73:29: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+90:21: INFO: Renamed 'tf.get_default_graph' to 'tf.compat.v1.get_default_graph'
+108:7: INFO: Renamed 'tf.Session' to 'tf.compat.v1.Session'
+--------------------------------------------------------------------------------
+

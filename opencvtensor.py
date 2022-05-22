@@ -20,10 +20,10 @@ os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 while "models" in pathlib.Path.cwd().parts:
     os.chdir('..')
  
-model_dir = pathlib.Path("/home/shane/Documents/GitHub/ShinyTch/models/pokemon_v1/saved_model")
+model_dir = pathlib.Path("models/faster_rcnn_resnet152_v1_800x1333_coco17_gpu-8/saved_model")
 model = tf.saved_model.load(str(model_dir))
  
-PATH_TO_LABELS = '/home/shane/Documents/GitHub/ShinyTch/data/label_map.pbtxt'
+PATH_TO_LABELS = 'data/mscoco_label_map.pbtxt'
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
  
 detection_model = model
