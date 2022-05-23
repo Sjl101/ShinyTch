@@ -23,17 +23,18 @@ from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 from grabscreen import grab_screen
 import time
+from math import sqrt
 
 
 
 #sets veriables i need later on
+cX, cY = 0, 0 
 left, right, top, bottom = 200, 600, 300, 730
 width, height = 1920, 1080
 coords = []
 encountertime = 20
 outputname = ''
 score = 0.0
-outputscore = 0
 encountercount = 0
 selectedpokemon = ''
 selectedsprites = 'assets/'
@@ -56,26 +57,29 @@ mon = (0, 40, 1920, 1080)
 while "models" in pathlib.Path.cwd().parts:
     os.chdir('..')
 
+#loads the model
 model = tf.saved_model.load(str(model_dir)) 
 detection_model = model
 category_index = label_map_util.create_category_index_from_labelmap(PATH_TO_LABELS, use_display_name=True)
 
+#starts firebase admin 
 default_app = firebase_admin.initialize_app()
 #----------------------------------------------------------------
 #functions
 
 #main function
 def main():
+    #allows the main function to assess all the veriables needed
     global selectedsprites
     global selectedpokemon
     global fps
     global start_time
     global display_time
-    global outputname
-    global outputscore  
+    global outputname 
     global encountercount, encountertimer
     global width, height
     global left, right, top, bottom
+    global cX, cY
     print(default_app)
     defaultgif = 'assets/default.gif'
     sg.theme("Purple")
@@ -95,7 +99,7 @@ def main():
     ]
 
     # Create the window and show it without the plot
-    window = sg.Window("PokeTch", location=(400, 200), ).Layout(layout)
+    window = sg.Window("ShinyTch", location=(400, 200), icon='assets/icon2.ico').Layout(layout)
     window.set_icon("assets/icon2.png")
 
     cap = cv2.VideoCapture(0)
@@ -129,7 +133,7 @@ def main():
         TIME = time.time() - start_time
         if (TIME) >= display_time :
             print("FPS: ", fps / (TIME))
-            print(outputname)
+            print(outputname, score)
             print(encountercount)
             print(f"time left:{encountertimer}")
             fps = 0
@@ -214,6 +218,7 @@ def encounter(pokemon, encounterscount, selectedpokemonfunc, switch, frame):
     global width, height
     global left, right, top, bottom
     global encountertimer
+    global cX, cY
     result = encounterscount
     TIMEENC = time.time() - encount_time
     #print(f'time left: {TIMEENC}')
@@ -244,39 +249,61 @@ def encounter(pokemon, encounterscount, selectedpokemonfunc, switch, frame):
         hw = (w, h)
            
         im3 = im2.resize(hw)  
-        im3.save("temp.png")
-        readimg = cv2.imread('temp.png')
+        im3.save("images/temp.png")
+        readimg = cv2.imread('images/temp.png')
         #converts the image to grayscale to get rid of the blackboxes
         gray, thresh, rgbcrop = remove_black_box(readimg)
         
-        cv2.imwrite('sofwinres.png',rgbcrop)
+        cv2.imwrite('images/noblack.png',rgbcrop)
         #gets the center coordinates of the detected pokemon
         cX, cY = find_center(thresh,readimg, w , h)
         gray2, thresh2, rgbcrop2 = remove_black_box(readimg)
-        cv2.imwrite('centercrop.png',rgbcrop2)
+        cv2.imwrite('images/centercrop.png',rgbcrop2)
+        blankimage = Image.open("images/noblack.png")
+        centerrgbval = blankimage.getpixel((cX,cY))
+        print(centerrgbval)
     return result
 
 def find_center(thresh, img, w, h):
+    global cX, cY
     red = [0,0,255]
     M = cv2.moments(thresh)
-    cX = int(M["m10"] / M["m00"])
-    cY = int(M["m01"] / M["m00"])
+    try:
+        cX = int(M["m10"] / M["m00"])
+        cY = int(M["m01"] / M["m00"])
+    except ZeroDivisionError:
+        print('Cant Devide by 0')
+    
     cv2.circle(img, (cX, cY), 5, (255, 255, 255), -1)
     cv2.putText(img, "centroid", (cX - 25, cY - 25),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
     rgb = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-    cv2.imwrite("result.png", rgb)
+    cv2.imwrite("images/result.png", rgb)
     return cX, cY
         
 def remove_black_box(readimg):
     gray = cv2.cvtColor(readimg,cv2.COLOR_BGR2GRAY)
     _,thresh = cv2.threshold(gray,1,255,cv2.THRESH_BINARY)
+    check = Image.open("images/temp.png")
     contours,hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-    cnt = contours[0]
-    x,y,w,h = cv2.boundingRect(cnt)
-    crop = readimg[y:y+h,x:x+w]
-    #converts the to correct rgb values
-    rgbcrop = cv2.cvtColor(crop,cv2.COLOR_BGR2RGB)
+    if not check.getbbox():
+        print("Image is black")
+        rgbcrop = cv2.cvtColor(readimg,cv2.COLOR_BGR2RGB)
+    else:
+        cnt = contours[0]
+        x,y,w,h = cv2.boundingRect(cnt)
+        crop = readimg[y:y+h,x:x+w]
+        #converts the to correct rgb values
+        rgbcrop = cv2.cvtColor(crop,cv2.COLOR_BGR2RGB)
     return gray, thresh, rgbcrop
+
+def closest_color(rgb):
+    r, g, b = rgb
+    color_diffs = []
+    for color in COLORS:
+        cr, cg, cb = color
+        color_diff = sqrt((r - cr)**2 + (g - cg)**2 + (b - cb)**2)
+        color_diffs.append((color_diff, color))
+    return min(color_diffs)[1]
 
 def run_inference_for_single_image(model, image):
     global outputname
@@ -314,8 +341,7 @@ def run_inference_for_single_image(model, image):
     return output_dict
 
 def show_inference(model, frame):
-    global outputname
-    global outputscore   
+    global outputname  
     global coords
     global score
   #take the frame from webcam feed and convert that to array
@@ -332,7 +358,7 @@ def show_inference(model, frame):
         category_index,
         instance_masks=output_dict.get('detection_masks_reframed', None),
         use_normalized_coordinates=True,
-        min_score_thresh=0.5,
+        min_score_thresh=0.05,
         line_thickness=5)
     score = output_dict['detection_scores'][np.argmax(output_dict['detection_scores'])]
     coords = output_dict['detection_boxes'][np.argmax(output_dict['detection_scores'])]
