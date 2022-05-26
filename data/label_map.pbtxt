@@ -1,0 +1,180 @@
+item {
+    id: 1
+    name: '001-bulbasaur'
+}
+
+item {
+    id: 2
+    name: '002-ivysaur'
+}
+
+item {
+    id: 3
+    name: '003-venusaur'
+}
+
+item {
+    id: 4
+    name: '004-charmander'
+}
+
+item {
+    id: 5
+    name: '005-charmeleon'
+}
+
+item {
+    id: 6
+    name: '006-charizard'
+}
+
+item {
+    id: 7
+    name: '007-squirtle'
+}
+
+item {
+    id: 8
+    name: '008-wartortle'
+}
+
+item {
+    id: 9
+    name: '009-blastoise'
+}
+
+item {
+    id: 10
+    name: '010-caterpie'
+}
+
+item {
+    id: 11
+    name: '011-metapod'
+}
+
+item {
+    id: 12
+    name: '012-butterfree'
+}
+
+item {
+    id: 13
+    name: '013-weedle'
+}
+
+item {
+    id: 14
+    name: '014-kakuna'
+}
+
+item {
+    id: 15
+    name: '015-beedrill'
+}
+
+item {
+    id: 16
+    name: '016-pidgey'
+}
+
+item {
+    id: 17
+    name: '017-pidgeotto'
+}
+
+item {
+    id: 18
+    name: '018-pidgeot'
+}
+
+item {
+    id: 19
+    name: '019-rattata'
+}
+
+item {
+    id: 20
+    name: '020-raticate'
+}
+
+item {
+    id: 21
+    name: '021-spearow'
+}
+
+item {
+    id: 22
+    name: '022-fearow'
+}
+
+item {
+    id: 23
+    name: '023-ekans'
+}
+
+item {
+    id: 24
+    name: '024-arbok'
+}
+
+item {
+    id: 25
+    name: '025-pikachu'
+}
+
+item {
+    id: 26
+    name: '026-raichu'
+}
+
+item {
+    id: 27
+    name: '027-sandshrew'
+}
+
+item {
+    id: 28
+    name: '027-sandslash'
+}
+
+item {
+    id: 29
+    name: '029-nidoran-f'
+}
+
+item {
+    id: 30
+    name: '030-nidorina'
+}
+
+item {
+    id: 31
+    name: '031-nidoqueen'
+}
+
+item {
+    id: 32
+    name: '032-nidoran-m'
+}
+
+item {
+    id: 33
+    name: '033-nidorino'
+}
+
+item {
+    id: 34
+    name: '034-nidoking'
+}
+
+item {
+    id: 35
+    name: '035-clefairy'
+}
+
+item {
+    id: 36
+    name: '036-clefable'
+}
+
